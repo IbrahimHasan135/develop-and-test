@@ -1,0 +1,73 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Web Bluetooth UART</title>
+<style> body{font-family:system-ui;margin:2rem} input,button{padding:.5rem} pre{background:#f6f6f6;padding:.75rem} </style>
+
+<h1>Web Bluetooth UART</h1>
+<p>
+  <button id="btnConnect">Connect & Subscribe</button>
+  <input id="msg" placeholder="ketik pesan, mis: ping" size="24">
+  <button id="btnSend" disabled>Send</button>
+</p>
+<pre id="log"></pre>
+
+<script>
+const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify
+const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write
+
+let device, server, service, txChar, rxChar;
+const log = (...a)=>{ document.getElementById('log').textContent += a.join(' ')+'\n'; };
+
+async function connectAndSubscribe() {
+  try {
+    device = await navigator.bluetooth.requestDevice({
+      // sementara pakai acceptAllDevices buat debug.
+      // kalau sudah mantap, ganti: filters: [{ services: [UART_SERVICE_UUID] }]
+      acceptAllDevices: true,
+      optionalServices: [UART_SERVICE_UUID]
+    });
+    log('Chosen:', device.name || '(no name)');
+
+    device.addEventListener('gattserverdisconnected', () => log('Disconnected'));
+
+    server  = await device.gatt.connect();
+    service = await server.getPrimaryService(UART_SERVICE_UUID);
+    txChar  = await service.getCharacteristic(UART_TX_UUID);
+    rxChar  = await service.getCharacteristic(UART_RX_UUID);
+
+    // === SUBSCRIBE ke TX ===
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged', e => {
+      const text = new TextDecoder().decode(e.target.value);
+      log('Notify:', text);
+    });
+    log('Notifications started.');
+
+    document.getElementById('btnSend').disabled = false;
+  } catch (err) {
+    if (err && (err.name === 'NotFoundError' || err.name === 'AbortError')) {
+      log('Pemilihan dibatalkan pengguna. Coba lagi.');
+    } else {
+      log('Error:', err.message || err);
+    }
+  }
+}
+
+async function sendMsg() {
+  if (!rxChar) return;
+  const text = document.getElementById('msg').value || 'ping';
+  try {
+    // Pakai writeValue (dengan response) supaya kelihatan error kalau gagal
+    await rxChar.writeValue(new TextEncoder().encode(text));
+    log('Sent:', text);
+  } catch (err) {
+    log('Write error:', err.message || err);
+  }
+}
+
+document.getElementById('btnConnect').onclick = connectAndSubscribe;
+document.getElementById('btnSend').onclick = sendMsg;
+
+if (!('bluetooth' in navigator)) log('Web Bluetooth tidak didukung di browser ini.');
+</script>
