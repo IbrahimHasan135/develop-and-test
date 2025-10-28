@@ -257,6 +257,7 @@ const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write  (Web
 let device, server, service, txChar, rxChar;
 
 // ==== Util UI (sudah ada di halamanmu) ====
+const select       = document.getElementById('model');
 const dot          = document.getElementById('connDot');
 const text         = document.getElementById('connText');
 const btnConnect   = document.getElementById('btnConnect');
@@ -363,10 +364,38 @@ function onNotify(e){
     }
 
     if (obj.model !== undefined) {
-      const el = document.getElementById('serverModel');
-      const el2 = document.getElementById('savedModelDisplay');
-      if (el) el.textContent = String(obj.model);
-      if (el2) el2.textContent = String(obj.model);
+        let model = "-";
+        switch(obj.model){
+            case 0:
+                model = "DAIKIN:ESP";
+                break;
+            case 1:
+                model = "DAIKIN:DAIKIN2";
+                break;
+            case 2:
+                model = "DAIKIN:DAIKIN216";
+                break;
+            case 3:
+                model = "DAIKIN:DAIKIN160";
+                break;
+            case 4:
+                model = "DAIKIN:DAIKIN176";
+                break;
+            case 5:
+                model = "DAIKIN:DAIKIN128";
+                break;
+            case 6:
+                model = "DAIKIN:DAIKIN152";
+                break;
+            case 7:
+                model = "DAIKIN:DAIKIN64";
+                break;
+        }
+        const el = document.getElementById('serverModel');
+        const el2 = document.getElementById('savedModelDisplay');
+        if (el) el.textContent = model;
+        if (el2) el2.textContent = model;
+        select.selectedIndex = String(obj.model);
     }
   }
 }
