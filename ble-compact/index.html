@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Climate Control App • Modern</title>
+<style>
+  /* ===== THEME ===== */
+  :root{
+    --bg: #f6f7fb;            /* light base */
+    --bg-2: linear-gradient(180deg, #ffffff 0%, #f6f7fb 100%);
+    --card: #ffffff;
+    --card-weak: #ffffff;
+    --ink: #111827;           /* gray-900 */
+    --muted:#6b7280;          /* gray-500 */
+    --line: rgba(0,0,0,.08);
+    --primary:#5b67f1;        /* indigo */
+    --primary-2:#10b981;      /* emerald */
+    --success:#16a34a;        /* green-600 */
+    --warning:#f59e0b;        /* amber-500 */
+    --danger:#ef4444;         /* red-500 */
+    --shadow: 0 8px 26px rgba(17,24,39,.06), 0 1px 0 rgba(255,255,255,.6) inset;
+    --stroke-w: 2.6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial; color:var(--ink); background:var(--bg-2) fixed;}
+  body{margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial; color:var(--ink); background:var(--bg-2) fixed;}
+
+  /* ===== APP BAR ===== */
+  .appbar{position:sticky;top:0;z-index:10; backdrop-filter:saturate(140%) blur(8px);
+    background:linear-gradient(90deg, #4f46e5, #06b6d4); color:#ffffff;
+    border-bottom:1px solid rgba(255,255,255,.18);
+    padding:14px 18px; box-shadow:var(--shadow)}
+  .appbar .title{display:flex; align-items:center; justify-content:center; gap:10px}
+  .title h1{margin:0; font-size:20px; letter-spacing:.3px; color:#ffffff;}  
+  .badge{padding:4px 8px; font-size:12px; border-radius:999px; background:rgba(255,255,255,.18); color:#ffffff; border:1px solid rgba(255,255,255,.35)}
+
+  /* ===== LAYOUT ===== */
+  .wrap{max-width:1040px; margin:22px auto; padding:0 16px}
+  .grid{display:grid; gap:16px; grid-template-columns:1.2fr .8fr}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+  /* ===== CARD ===== */
+  .card{ position:relative; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--shadow)}
+  .card.soft{background:var(--card-weak)}
+  .card h2{margin:0 0 10px; font-size:16px}
+  .hint{color:var(--muted); font-size:13px}
+
+  /* ===== INPUTS ===== */
+  label{display:block; font-weight:600; font-size:12px; margin:10px 0 6px; color:#1f2d67}
+  input,select{width:100%; border:1px solid var(--line); background:rgba(255,255,255,.06); color:var(--ink); border-radius:12px; padding:12px; font-size:15px; outline:none; transition:border .2s, box-shadow .2s, background .2s}
+  input::placeholder{color:#94a3b8}
+  input:focus, select:focus{border-color:#93c5fd; box-shadow:0 0 0 3px rgba(147,197,253,.2)}
+
+  .row{display:flex; gap:12px; flex-wrap:wrap}
+  .grow{flex:1 1 260px}
+
+  /* ===== BUTTONS ===== */
+  .btn{appearance:none; border:0; border-radius:12px; padding:11px 14px; font-weight:700; cursor:pointer; 
+      background:var(--primary); color:#ffffff;
+      box-shadow:0 8px 20px rgba(0,0,0,.15); transition:transform .05s ease, box-shadow .2s ease, filter .2s}
+  .btn:hover{box-shadow:0 14px 30px rgba(0,0,0,.22)}
+  .btn:active{transform:translateY(1px)}
+  .btn:hover{box-shadow:0 14px 30px rgba(0,0,0,.35)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--primary); color:#fff} 
+  .btn.cyan{background:#06b6d4; color:#063642} 
+  .btn.ghost{background:#eef2ff; color:var(--primary); border:1px solid #e0e7ff}
+  .btn.success{background:var(--success); color:#ffffff} 
+  .btn.danger{background:linear-gradient(180deg,#f87171,#b91c1c); color:white}
+
+  .chipbar{display:flex; gap:8px; flex-wrap:wrap}
+  .chip{padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--line); background:rgba(255,255,255,.06)}
+
+  /* ===== STATUS ===== */
+  .section-title{display:flex; align-items:center; gap:10px; margin-bottom:8px}
+  .dot{width:10px;height:10px;border-radius:50%;background:#475569; box-shadow:0 0 0 3px rgba(0,0,0,.12) inset}
+  .dot.online{background:var(--success)}
+  .kv{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.12); font-size:14px}
+  .kv:last-child{border-bottom:0}
+
+  .mt6{margin-top:6px} .mt8{margin-top:8px} .mt12{margin-top:12px}
+.hero-art{position:absolute; right:8px; top:-10px; width:200px; max-width:40vw; pointer-events:none}
+.hero-art{position:absolute; right:8px; top:-10px; width:200px; max-width:40vw; pointer-events:none}
+.hero-art2{position:absolute; left:-8px; bottom:-10px; width:280px; max-width:52vw; pointer-events:none}
+.hero-art2a{position:absolute; right:0px; top:-15px; width:280px; max-width:52vw; pointer-events:none; transform: scaleX(-1); transform-origin: center;}
+.hero-art2b{position:absolute; right:-140px; top:-10px; width:280px; max-width:52vw; pointer-events:none; transform-origin: center;}
+svg{
+  stroke-width: var(--stroke-w) !important;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke; /* biar tebalnya konsisten saat di-scale */
+}
+.decor{position:absolute; inset:0; background-image:radial-gradient(circle at 12px 12px, rgba(99,102,241,.08) 2px, transparent 0); background-size:26px 26px; opacity:.3; pointer-events:none}
+</style>
+</head>
+<body>
+  <header class="appbar">
+    <div class="title">
+      <div class="badge">v2 • Modern UI</div>
+      <h1>Climate Control App</h1>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- CONNECTIVITY + WIFI (Top) -->
+    <section class="card" id="connectCard">
+      <!-- Decorative vector -->
+      <svg class="hero-art" viewBox="0 0 240 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#5b67f1" />
+            <stop offset="1" stop-color="#06b6d4" />
+          </linearGradient>
+        </defs>
+        <g opacity=".22" stroke="url(#g1)" stroke-width="2">
+          <rect x="6" y="6" width="228" height="108" rx="16"/>
+          <path d="M20 40h60m20 0h60m20 0h20M20 80h40m24 0h96m24 0h8"/>
+          <circle cx="60" cy="60" r="12"/>
+          <circle cx="180" cy="60" r="18"/>
+        </g>
+        <g opacity=".15" fill="url(#g1)">
+          <circle cx="30" cy="30" r="3"/>
+          <circle cx="210" cy="26" r="3"/>
+          <circle cx="120" cy="96" r="3"/>
+        </g>
+      </svg>
+      <!-- extra vector layers to make it fuller -->
+      <svg class="hero-art2" viewBox="0 0 320 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#06b6d4" />
+            <stop offset="1" stop-color="#5b67f1" />
+          </linearGradient>
+        </defs>
+        <g opacity=".12" stroke="url(#g2)" stroke-width="1.6">
+          <path d="M10 110c40-28 80-28 120 0s80 28 120 0"/>
+          <path d="M10 92c40-24 80-24 120 0s80 24 120 0"/>
+          <path d="M10 74c40-20 80-20 120 0s80 20 120 0"/>
+        </g>
+        <g opacity=".12">
+          <rect x="250" y="20" width="56" height="24" rx="6" fill="url(#g2)"/>
+          <circle cx="36" cy="26" r="4" fill="url(#g2)"/>
+        </g>
+      </svg>
+      <div class="section-title">
+        <span id="connDot" class="dot"></span>
+        <h2>Connect to Bluetooth</h2>
+      </div>
+      <p class="hint" id="connText">Belum terhubung ke perangkat.</p>
+
+      <div class="row mt6">
+        <button class="btn primary" id="btnConnect">Connect to Device</button>
+        <button class="btn ghost" id="btnDisconnect" style="display:none">Disconnect</button>
+        <div class="chipbar">
+          <span class="chip">BLE</span>
+          <span class="chip">ESP32 Ready</span>
+          <span class="chip">Wi‑Fi Setup</span>
+        </div>
+      </div>
+
+      <div class="row mt12">
+        <div class="grow">
+          <label for="ssid">SSID Wi‑Fi</label>
+          <input id="ssid" type="text" placeholder="Nama jaringan" />
+        </div>
+        <div class="grow">
+          <label for="pass">PASS Wi‑Fi</label>
+          <div style="position:relative">
+            <input id="pass" type="password" placeholder="Kata sandi" />
+            <button id="togglePass" type="button" class="btn ghost" style="position:absolute; right:6px; top:6px; padding:6px 10px">Show</button>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-end">
+          <button class="btn success" id="btnSaveWifi">Save Wi‑Fi</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid mt12">
+      <!-- MODEL & CONTROLS -->
+      <section class="card">
+        <!-- extra vector layers to make it fuller -->
+        <svg class="hero-art2a" viewBox="0 0 280 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#5b67f1"/><stop offset="1" stop-color="#06b6d4"/>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#gg)" opacity=".16">
+            <circle cx="40" cy="60" r="12" stroke-width="2"/>
+            <circle cx="40" cy="60" r="26" />
+            <circle cx="40" cy="60" r="42" />
+            <path d="M90 28h50M90 48h80M90 68h60" />
+          </g>
+        </svg>
+        <h2>Pilih Model AC</h2>
+        <p class="hint">Mode otomatis (PIR) akan mengirim: <strong>16°C • COOL • HIGH</strong>.</p>
+
+        <label for="model" class="mt8">Model</label>
+        <select id="model" name="model">
+          <optgroup label="DAIKIN">
+            <option value="DAIKIN:ESP">DAIKIN:ESP</option>
+            <option value="DAIKIN:DAIKIN2">DAIKIN:DAIKIN2</option>
+            <option value="DAIKIN:DAIKIN216">DAIKIN:DAIKIN216</option>
+            <option value="DAIKIN:DAIKIN160">DAIKIN:DAIKIN160</option>
+            <option value="DAIKIN:DAIKIN176">DAIKIN:DAIKIN176</option>
+            <option value="DAIKIN:DAIKIN128">DAIKIN:DAIKIN128</option>
+            <option value="DAIKIN:DAIKIN152">DAIKIN:DAIKIN152</option>
+            <option value="DAIKIN:DAIKIN64">DAIKIN:DAIKIN64</option>
+          </optgroup>
+        </select>
+
+        <div class="row mt12">
+          <button id="saveBtn" type="button" class="btn primary">Simpan Model</button>
+          <button id="autoAC" type="button" class="btn cyan">Set AC Auto</button>
+          <button id="testOnBtn" type="button" class="btn ghost">Test ON</button>
+          <button id="testOffBtn" type="button" class="btn ghost">Test OFF</button>
+        </div>
+
+        <div class="hint mt8">Model tersimpan: <strong id="savedModelDisplay">-</strong></div>
+      </section>
+
+      <!-- REALTIME STATUS -->
+      <aside class="card soft">
+        <svg class="hero-art2b" viewBox="0 0 280 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gx" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#5b67f1"/>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#gx)" opacity=".12">
+            <path d="M-10 20l80 80M10 10l80 80M30 0l80 80M50 -10l80 80M70 -20l80 80" />
+          </g>
+        </svg>
+        <!-- subtle dots background for richness -->
+        <div class="decor" aria-hidden="true"></div>
+        <div class="section-title">
+          <h2>Status Realtime</h2>
+        </div>
+        <div class="kv"><span>PIR</span><strong id="pirStatus">-</strong></div>
+        <div class="kv"><span>Suhu</span><strong><span id="tempValue">-</span> °C</strong></div>
+        <div class="kv"><span>Humidity</span><strong><span id="humValue">-</span> %</strong></div>
+        <div class="kv"><span>Pressure </span><strong><span id="pressValue">-</span> hPa</strong></div>
+        <div class="kv"><span>Model (server)</span><strong id="serverModel">-</strong></div>
+      </aside>
+    </div>
+  </main>
+
+<script>
+// ==== Konstanta UUID (Nordic UART style) ====
+const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify (ESP32 -> Web)
+const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write  (Web -> ESP32)
+
+// ==== State BLE ====
+let device, server, service, txChar, rxChar;
+
+// ==== Util UI (sudah ada di halamanmu) ====
+const dot          = document.getElementById('connDot');
+const text         = document.getElementById('connText');
+const btnConnect   = document.getElementById('btnConnect');
+const btnDisconnect= document.getElementById('btnDisconnect');
+
+function setConnectedUI(name){
+  dot.classList.add('online');
+  text.textContent = `Terhubung ke ${name || 'Device'}.`;
+  btnConnect.style.display = 'none';
+  btnDisconnect.style.display = 'inline-block';
+}
+function setDisconnectedUI(){
+  dot.classList.remove('online');
+  text.textContent = 'Belum terhubung ke perangkat.';
+  btnConnect.style.display = 'inline-block';
+  btnDisconnect.style.display = 'none';
+}
+function setButtonsEnabled(on) {
+  ['testOnBtn','testOffBtn','autoAC'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !on;
+  });
+}
+
+// ==== Pair + Subscribe ====
+async function connectAndSubscribe(){
+  try{
+    device = await navigator.bluetooth.requestDevice({
+      // pakai filter service agar chooser tidak kebanyakan device
+      //filters: [{ services: [UART_SERVICE_UUID] }],
+      acceptAllDevices: true,
+      optionalServices: [UART_SERVICE_UUID]
+      // kalau mau debug bebas: gunakan acceptAllDevices:true + optionalServices
+    });
+    console.log('[BLE] chosen:', device.name || '(no name)');
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+
+    server  = await device.gatt.connect();
+    service = await server.getPrimaryService(UART_SERVICE_UUID);
+    txChar  = await service.getCharacteristic(UART_TX_UUID);
+    rxChar  = await service.getCharacteristic(UART_RX_UUID);
+
+    // Subscribe notifikasi (ESP32 -> Web)
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged', onNotify);
+    console.log('[BLE] notifications started');
+
+    setConnectedUI(device.name);
+  }catch(err){
+    if (err?.name === 'NotFoundError' || err?.name === 'AbortError'){
+      console.log('[BLE] Pemilihan dibatalkan user');
+    } else {
+      console.error('[BLE] Error connect:', err);
+    }
+  }
+}
+
+function onDisconnected(){
+  console.log('[BLE] disconnected');
+  setDisconnectedUI();
+}
+
+// ==== Handler notifikasi: tampilkan variabel ke console ====
+function onNotify(e){
+  const text = new TextDecoder().decode(e.target.value || new DataView(new ArrayBuffer(0)));
+  console.log('[BLE] notify raw:', text);
+
+  let obj;
+  try {
+    obj = JSON.parse(text);
+  } catch {
+    // bukan JSON → abaikan
+    return;
+  }
+  if (!obj || typeof obj !== 'object') return;
+
+  // selalu log semua pasangan k:v yang diterima
+  for (const [k, v] of Object.entries(obj)) {
+    console.log(`[BLE] var ${k}:`, v);
+  }
+
+  // Hanya update UI jika perintahnya "realtime"
+  if (obj.cmd === 'realtime') {
+    // PIR: tampilkan ON/OFF atau nilai aslinya
+    if (obj.pir !== undefined) {
+      const on = Number(obj.pir) ? 'MOTION' : 'NO MOTION';
+      const el = document.getElementById('pirStatus');
+      if (el) el.textContent = on;
+    }
+
+    if (obj.temperature !== undefined) {
+      const el = document.getElementById('tempValue');
+      if (el) el.textContent = Number(obj.temperature).toFixed(1);
+    }
+
+    if (obj.humidity !== undefined) {
+      const el = document.getElementById('humValue');
+      if (el) el.textContent = Number(obj.humidity).toFixed(0);
+    }
+
+    if (obj.pressure !== undefined) {
+      const el = document.getElementById('pressValue');
+      if (el) el.textContent = Number(obj.pressure).toFixed(0);
+    }
+
+    if (obj.model !== undefined) {
+      const el = document.getElementById('serverModel');
+      const el2 = document.getElementById('savedModelDisplay');
+      if (el) el.textContent = String(obj.model);
+      if (el2) el2.textContent = String(obj.model);
+    }
+  }
+}
+
+
+// ==== Kirim SSID/Password saat klik #btnSaveWifi ====
+async function sendWifi(){
+  if (!rxChar){
+    console.warn('[BLE] belum terhubung');
+    return;
+  }
+  const ssid = (document.getElementById('ssid')?.value || '').trim();
+  const pass = (document.getElementById('pass')?.value || '');
+  if (!ssid){
+    alert('SSID tidak boleh kosong');
+    return;
+  }
+
+  // Format kirim: JSON agar rapi di sisi ESP32
+  const payload = JSON.stringify({ cmd:'set_wifi', ssid, pass });
+
+  try{
+    // gunakan writeValue (with response) supaya error terlihat jelas
+    await rxChar.writeValue(new TextEncoder().encode(payload));
+    console.log('[BLE] sent set_wifi:', {ssid, passHidden: '*'.repeat(pass.length)});
+  }catch(err){
+    console.error('[BLE] write error:', err);
+  }
+}
+
+// ==== Tombol ====
+btnConnect.addEventListener('click', connectAndSubscribe);
+btnDisconnect.addEventListener('click', async ()=>{
+  try{ await device?.gatt?.disconnect(); }catch{}
+  setDisconnectedUI();
+});
+document.getElementById('btnSaveWifi').addEventListener('click', sendWifi);
+
+
+// === kirim perintah mode AC ===
+// mapping: testOnBtn=1, testOffBtn=2, autoAC=3
+async function sendModeAc(val) {
+  if (!rxChar) {
+    console.warn('[BLE] belum terhubung (rxChar kosong)');
+    return;
+  }
+  const payload = JSON.stringify({ cmd: 'mode_ac', value: Number(val) });
+
+  try {
+    await rxChar.writeValue(new TextEncoder().encode(payload)); // with response
+    console.log('[BLE] sent mode_ac:', payload);
+  } catch (err) {
+    console.error('[BLE] write error:', err);
+  }
+}
+
+// pasang event listeners tombol
+document.getElementById('testOnBtn')?.addEventListener('click',  () => sendModeAc(1));
+document.getElementById('testOffBtn')?.addEventListener('click', () => sendModeAc(2));
+document.getElementById('autoAC')?.addEventListener('click',     () => sendModeAc(3));
+
+// === kirim "set_model" berdasarkan pilihan <select id="model"> ===
+const MODEL_ORDER = [
+  "DAIKIN:ESP",        // 0 (paling atas)
+  "DAIKIN:DAIKIN2",    // 1
+  "DAIKIN:DAIKIN216",  // 2
+  "DAIKIN:DAIKIN160",  // 3
+  "DAIKIN:DAIKIN176",  // 4
+  "DAIKIN:DAIKIN128",  // 5
+  "DAIKIN:DAIKIN152",  // 6
+  "DAIKIN:DAIKIN64"    // 7 (paling bawah)
+];
+
+async function sendSetModel() {
+  if (!rxChar) {
+    console.warn('[BLE] belum terhubung (rxChar kosong)');
+    return;
+  }
+  const sel = document.getElementById('model');
+  if (!sel) return;
+
+  const selectedText = sel.value; // contoh: "DAIKIN:ESP"
+  const idx = MODEL_ORDER.indexOf(selectedText);
+
+  if (idx < 0) {
+    console.error('[BLE] model tidak dikenali:', selectedText);
+    return;
+  }
+
+  const payload = JSON.stringify({ cmd: 'set_model', value: idx });
+
+  try {
+    await rxChar.writeValue(new TextEncoder().encode(payload)); // with response
+    console.log('[BLE] sent set_model:', { label: selectedText, value: idx });
+  } catch (err) {
+    console.error('[BLE] write error:', err);
+  }
+}
+
+// tombol Simpan Model
+document.getElementById('saveBtn')?.addEventListener('click', sendSetModel);
+
+// Guard untuk browser yang tidak support
+if (!('bluetooth' in navigator)) {
+  console.warn('Web Bluetooth tidak didukung di browser ini.');
+}
+</script>
+
+</body>
+</html>
