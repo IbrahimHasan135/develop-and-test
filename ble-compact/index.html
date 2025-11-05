@@ -68,6 +68,7 @@
   .btn.ghost{background:#eef2ff; color:var(--primary); border:1px solid #e0e7ff}
   .btn.success{background:var(--success); color:#ffffff} 
   .btn.danger{background:linear-gradient(180deg,#f87171,#b91c1c); color:white}
+  .btn.warn{background:var(--warning); color:#1f2937}
 
   .chipbar{display:flex; gap:8px; flex-wrap:wrap}
   .chip{padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--line); background:rgba(255,255,255,.06)}
@@ -76,22 +77,21 @@
   .section-title{display:flex; align-items:center; gap:10px; margin-bottom:8px}
   .dot{width:10px;height:10px;border-radius:50%;background:#475569; box-shadow:0 0 0 3px rgba(0,0,0,.12) inset}
   .dot.online{background:var(--success)}
-  .kv{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed rgba(255,255,255,.12); font-size:14px}
+  .kv{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed rgba(0,0,0,.06); font-size:14px}
   .kv:last-child{border-bottom:0}
 
   .mt6{margin-top:6px} .mt8{margin-top:8px} .mt12{margin-top:12px}
-.hero-art{position:absolute; right:8px; top:-10px; width:200px; max-width:40vw; pointer-events:none}
-.hero-art{position:absolute; right:8px; top:-10px; width:200px; max-width:40vw; pointer-events:none}
-.hero-art2{position:absolute; left:-8px; bottom:-10px; width:280px; max-width:52vw; pointer-events:none}
-.hero-art2a{position:absolute; right:0px; top:-15px; width:280px; max-width:52vw; pointer-events:none; transform: scaleX(-1); transform-origin: center;}
-.hero-art2b{position:absolute; right:-140px; top:-10px; width:280px; max-width:52vw; pointer-events:none; transform-origin: center;}
-svg{
-  stroke-width: var(--stroke-w) !important;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke; /* biar tebalnya konsisten saat di-scale */
-}
-.decor{position:absolute; inset:0; background-image:radial-gradient(circle at 12px 12px, rgba(99,102,241,.08) 2px, transparent 0); background-size:26px 26px; opacity:.3; pointer-events:none}
+  .hero-art{position:absolute; right:8px; top:-10px; width:200px; max-width:40vw; pointer-events:none}
+  .hero-art2{position:absolute; left:-8px; bottom:-10px; width:280px; max-width:52vw; pointer-events:none}
+  .hero-art2a{position:absolute; right:0px; top:-15px; width:280px; max-width:52vw; pointer-events:none; transform: scaleX(-1); transform-origin: center;}
+  .hero-art2b{position:absolute; right:-140px; top:-10px; width:280px; max-width:52vw; pointer-events:none; transform-origin: center;}
+  svg{ stroke-width: var(--stroke-w) !important; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  .decor{position:absolute; inset:0; background-image:radial-gradient(circle at 12px 12px, rgba(99,102,241,.08) 2px, transparent 0); background-size:26px 26px; opacity:.3; pointer-events:none}
+
+  /* ===== OFFLINE BANNER ===== */
+  .offline-wrap{display:none; align-items:center; gap:10px; padding:10px; border:1px dashed #f59e0b; background:#fff7ed; color:#92400e; border-radius:12px}
+  .offline-wrap.show{display:flex}
+  .offline-count{font-variant-numeric: tabular-nums; font-weight:700}
 </style>
 </head>
 <body>
@@ -125,7 +125,6 @@ svg{
           <circle cx="120" cy="96" r="3"/>
         </g>
       </svg>
-      <!-- extra vector layers to make it fuller -->
       <svg class="hero-art2" viewBox="0 0 320 140" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
@@ -149,6 +148,13 @@ svg{
       </div>
       <p class="hint" id="connText">Belum terhubung ke perangkat.</p>
 
+      <!-- OFFLINE BANNER (grace period) -->
+      <div id="offlineWrap" class="offline-wrap mt6" role="status" aria-live="polite">
+        <span>Perangkat <strong>offline</strong>. Menunggu <span id="offlineCount" class="offline-count">3:00</span> untuk auto-reconnect…</span>
+        <button id="btnOfflineInfo" class="btn warn" type="button">Info Offline</button>
+        <button id="btnCancelGrace" class="btn ghost" type="button">Batalkan & Putuskan</button>
+      </div>
+
       <div class="row mt6">
         <button class="btn primary" id="btnConnect">Connect to Device</button>
         <button class="btn ghost" id="btnDisconnect" style="display:none">Disconnect</button>
@@ -167,7 +173,7 @@ svg{
         <div class="grow">
           <label for="pass">PASS Wi‑Fi</label>
           <div style="position:relative">
-            <input id="pass" type="password" placeholder="Kata sandi" />
+            <input id="pass" type="text" placeholder="Kata sandi" />
             <button id="togglePass" type="button" class="btn ghost" style="position:absolute; right:6px; top:6px; padding:6px 10px">Show</button>
           </div>
         </div>
@@ -180,7 +186,6 @@ svg{
     <div class="grid mt12">
       <!-- MODEL & CONTROLS -->
       <section class="card">
-        <!-- extra vector layers to make it fuller -->
         <svg class="hero-art2a" viewBox="0 0 280 100" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="gg" x1="0" y1="0" x2="1" y2="1">
@@ -195,20 +200,25 @@ svg{
           </g>
         </svg>
         <h2>Pilih Model AC</h2>
-        <p class="hint">Mode otomatis (PIR) akan mengirim: <strong>16°C • COOL • HIGH</strong>.</p>
+        <p class="hint">Set AC Auto mengatur sistem: <strong>Okupansi (PIR)</strong>.</p>
+        <!-- ===== Brand / Model / Fan ===== -->
+        <label for="brandSelect" class="mt8">Brand</label>
+        <select id="brandSelect" name="brand">
+          <!-- diisi via JS -->
+        </select>
 
         <label for="model" class="mt8">Model</label>
+        <!-- PENTING: tetap pakai id="model" agar kode lain tidak perlu diubah -->
         <select id="model" name="model">
-          <optgroup label="DAIKIN">
-            <option value="DAIKIN:ESP">DAIKIN:ESP</option>
-            <option value="DAIKIN:DAIKIN2">DAIKIN:DAIKIN2</option>
-            <option value="DAIKIN:DAIKIN216">DAIKIN:DAIKIN216</option>
-            <option value="DAIKIN:DAIKIN160">DAIKIN:DAIKIN160</option>
-            <option value="DAIKIN:DAIKIN176">DAIKIN:DAIKIN176</option>
-            <option value="DAIKIN:DAIKIN128">DAIKIN:DAIKIN128</option>
-            <option value="DAIKIN:DAIKIN152">DAIKIN:DAIKIN152</option>
-            <option value="DAIKIN:DAIKIN64">DAIKIN:DAIKIN64</option>
-          </optgroup>
+          <!-- diisi via JS sesuai brand -->
+        </select>
+
+        <label for="modeSelect" class="mt8">Model</label>
+        <select id="modeSelect" name="fan">
+          <option value="low">low</option>
+          <option value="mid">mid</option>
+          <option value="high">high</option>
+          <option value="auto" selected>auto</option>
         </select>
 
         <div class="row mt12">
@@ -233,7 +243,6 @@ svg{
             <path d="M-10 20l80 80M10 10l80 80M30 0l80 80M50 -10l80 80M70 -20l80 80" />
           </g>
         </svg>
-        <!-- subtle dots background for richness -->
         <div class="decor" aria-hidden="true"></div>
         <div class="section-title">
           <h2>Status Realtime</h2>
@@ -248,6 +257,53 @@ svg{
   </main>
 
 <script>
+  /* ==== Mapping Brand → Models (dibangun dari CSV kamu) ==== */
+const AC_DATA = {"brand_list":["ACTRON","AEG","AERONIK","AGRATTO","AKAI","ALLIANCE","AOKESI","APTON","AQUA","ARGO","ARISTON","AUDINAC","AUX","BALLU","BAXI","BEKO","BEST","BLUERIDGE","BORA","BOSCH","CARRIER","CASPER","CECOTEC","CHIGO","CHUNLAN","CONSUL","COOPER","DAIKIN","DAITSU","DELONGHI","DEVANTI","DIMPLEX","ECOAIR","ELECTRA","ELECTROLUX","ELGIN","ENDESA","EQUATION","ERISSON","FAMILY","FANWORLD","FISHER","FLOUU","FRIEDRICH","FUJI","FUJIKO","FUJITSU","GALANZ","GENERAL","GOODMAN","GREE","HAIER","HANTECH","HAPPYTREE","HISENSE","HITACHI","HOKKAIDO","HTW","HUALING","HYUNDAI","IGC","JUNKERS","KADEN","KELVINATOR","KLASSE","KOLIN","KOMECO","KOREL","LENNOX","LG","MIDEA","MIRAGE","MISTRAL","MITSUBISHI","MUNDOCLIMA","PANASONIC","PARKAIR","PEARL","PHILCO","PIONEER","PROFIO","RIELLO","ROTENSO","ROYAL","SAGA","SAMSUNG","SANYO","SAUNIER","SENDO","SENVILLE","SHARP","SIGMA","SIMBIO","SINTECH","SPRINGER","SUNGOLD","TADIRAN","TCL","TECHNIBEL","TORNADO","TOSHIBA","TOSOT","TOYOTOMI","TRISTAR","TROTEC","UNIONAIRE","VAILLANT","VIESSMANN","VOLTAS","VORTEX","VS","WHIRLPOOL","WHYNTER","WIDE","XIAOMI","YAMATSU","ZANUSSI","ZEPHIR"],"models_by_brand":{"TOYOTOMI":[{"id":"1000","label":"TOYOTOMI:1000"},{"id":"1000_converted","label":"TOYOTOMI:1000A"}],"PANASONIC":[{"id":"1020","label":"PANASONIC:1020"},{"id":"1021","label":"PANASONIC:1021"},{"id":"1022","label":"PANASONIC:1022"},{"id":"1023","label":"PANASONIC:1023"},{"id":"1024","label":"PANASONIC:1024"},{"id":"1025","label":"PANASONIC:1025"},{"id":"1026","label":"PANASONIC:1026"},{"id":"1027","label":"PANASONIC:1027"},{"id":"1028","label":"PANASONIC:1028"},{"id":"1029","label":"PANASONIC:1029"},{"id":"1030","label":"PANASONIC:1030"},{"id":"1031","label":"PANASONIC:1031"},{"id":"1032","label":"PANASONIC:1032"}],"GENERAL":[{"id":"1040","label":"GENERAL:1040"},{"id":"1041","label":"GENERAL:1041"},{"id":"1042","label":"GENERAL:1042"},{"id":"1043","label":"GENERAL:1043"},{"id":"1044","label":"GENERAL:1044"}],"LG":[{"id":"1060","label":"LG:1060"},{"id":"1061","label":"LG:1061"},{"id":"1062","label":"LG:1062"},{"id":"1063","label":"LG:1063"},{"id":"1064","label":"LG:1064"},{"id":"1065","label":"LG:1065"},{"id":"1066","label":"LG:1066"},{"id":"1067","label":"LG:1067"},{"id":"1068","label":"LG:1068"},{"id":"1069","label":"LG:1069"},{"id":"1070","label":"LG:1070"}],"HITACHI":[{"id":"1080","label":"HITACHI:1080"},{"id":"1081","label":"HITACHI:1081"},{"id":"1082","label":"HITACHI:1082"},{"id":"1083","label":"HITACHI:1083"},{"id":"1084","label":"HITACHI:1084"},{"id":"1085","label":"HITACHI:1085"},{"id":"1086","label":"HITACHI:1086"},{"id":"1087","label":"HITACHI:1087"},{"id":"1088","label":"HITACHI:1088"},{"id":"1089","label":"HITACHI:1089"},{"id":"1090","label":"HITACHI:1090"},{"id":"1091","label":"HITACHI:1091"},{"id":"1092","label":"HITACHI:1092"}],"DAIKIN":[{"id":"1100","label":"DAIKIN:1100"},{"id":"1101","label":"DAIKIN:1101"},{"id":"1102","label":"DAIKIN:1102"},{"id":"1102_converted","label":"DAIKIN:1102A"},{"id":"1103","label":"DAIKIN:1103"},{"id":"1104","label":"DAIKIN:1104"},{"id":"1105","label":"DAIKIN:1105"},{"id":"1106","label":"DAIKIN:1106"},{"id":"1107","label":"DAIKIN:1107"},{"id":"1108","label":"DAIKIN:1108"},{"id":"1109","label":"DAIKIN:1109"},{"id":"1110","label":"DAIKIN:1110"},{"id":"1111","label":"DAIKIN:1111"},{"id":"1112","label":"DAIKIN:1112"},{"id":"1113","label":"DAIKIN:1113"},{"id":"1114","label":"DAIKIN:1114"},{"id":"1115","label":"DAIKIN:1115"},{"id":"1116","label":"DAIKIN:1116"},{"id":"1117","label":"DAIKIN:1117"},{"id":"1118","label":"DAIKIN:1118"},{"id":"1119","label":"DAIKIN:1119"},{"id":"5120","label":"DAIKIN:5120"}],"MITSUBISHI":[{"id":"1120","label":"MITSUBISHI:1120"},{"id":"1121","label":"MITSUBISHI:1121"},{"id":"1122","label":"MITSUBISHI:1122"},{"id":"1123","label":"MITSUBISHI:1123"},{"id":"1124","label":"MITSUBISHI:1124"},{"id":"1125","label":"MITSUBISHI:1125"},{"id":"1126","label":"MITSUBISHI:1126"},{"id":"1127","label":"MITSUBISHI:1127"},{"id":"1128","label":"MITSUBISHI:1128"},{"id":"1129","label":"MITSUBISHI:1129"},{"id":"1130","label":"MITSUBISHI:1130"},{"id":"1131","label":"MITSUBISHI:1131"},{"id":"1132","label":"MITSUBISHI:1132"},{"id":"1133","label":"MITSUBISHI:1133"},{"id":"1134","label":"MITSUBISHI:1134"},{"id":"1135","label":"MITSUBISHI:1135"},{"id":"1136","label":"MITSUBISHI:1136"},{"id":"1137","label":"MITSUBISHI:1137"},{"id":"1138","label":"MITSUBISHI:1138"},{"id":"1139","label":"MITSUBISHI:1139"},{"id":"1680","label":"MITSUBISHI:1680"},{"id":"1681","label":"MITSUBISHI:1681"},{"id":"1681","label":"MITSUBISHI:1681"},{"id":"1683","label":"MITSUBISHI:1683"},{"id":"1684","label":"MITSUBISHI:1684"},{"id":"1685","label":"MITSUBISHI:1685"},{"id":"1686","label":"MITSUBISHI:1686"},{"id":"1687","label":"MITSUBISHI:1687"},{"id":"1688","label":"MITSUBISHI:1688"},{"id":"1689","label":"MITSUBISHI:1689"},{"id":"1690","label":"MITSUBISHI:1690"},{"id":"1691","label":"MITSUBISHI:1691"},{"id":"1692","label":"MITSUBISHI:1692"},{"id":"5140","label":"MITSUBISHI:5140"}],"ACTRON":[{"id":"1140","label":"ACTRON:1140"}],"CARRIER":[{"id":"1160","label":"CARRIER:1160"},{"id":"1161","label":"CARRIER:1161"},{"id":"1162","label":"CARRIER:1162"},{"id":"1163","label":"CARRIER:1163"},{"id":"1164","label":"CARRIER:1164"},{"id":"1165","label":"CARRIER:1165"},{"id":"1166","label":"CARRIER:1166"}],"GREE":[{"id":"1180","label":"GREE:1180"},{"id":"1181","label":"GREE:1181"},{"id":"1182","label":"GREE:1182"},{"id":"1183","label":"GREE:1183"},{"id":"1184","label":"GREE:1184"},{"id":"1185","label":"GREE:1185"},{"id":"1186","label":"GREE:1186"},{"id":"1187","label":"GREE:1187"}],"TOSOT":[{"id":"1200","label":"TOSOT:1200"}],"SUNGOLD":[{"id":"1220","label":"SUNGOLD:1220"}],"CONSUL":[{"id":"1240","label":"CONSUL:1240"},{"id":"1241","label":"CONSUL:1241"}],"TOSHIBA":[{"id":"1260","label":"TOSHIBA:1260"},{"id":"1261","label":"TOSHIBA:1261"},{"id":"1262","label":"TOSHIBA:1262"},{"id":"1263","label":"TOSHIBA:1263"},{"id":"1264","label":"TOSHIBA:1264"},{"id":"1265","label":"TOSHIBA:1265"}],"FUJITSU":[{"id":"1280","label":"FUJITSU:1280"},{"id":"1281","label":"FUJITSU:1281"},{"id":"1282","label":"FUJITSU:1282"},{"id":"1283","label":"FUJITSU:1283"},{"id":"1284","label":"FUJITSU:1284"},{"id":"1285","label":"FUJITSU:1285"},{"id":"1286","label":"FUJITSU:1286"},{"id":"1287","label":"FUJITSU:1287"},{"id":"1288","label":"FUJITSU:1288"},{"id":"1289","label":"FUJITSU:1289"},{"id":"1290","label":"FUJITSU:1290"},{"id":"1291","label":"FUJITSU:1291"},{"id":"1292","label":"FUJITSU:1292"},{"id":"1293","label":"FUJITSU:1293"},{"id":"1294","label":"FUJITSU:1294"}],"SHARP":[{"id":"1300","label":"SHARP:1300"},{"id":"1301","label":"SHARP:1301"}],"HAIER":[{"id":"1320","label":"HAIER:1320"},{"id":"1321","label":"HAIER:1321"},{"id":"1322","label":"HAIER:1322"}],"TADIRAN":[{"id":"1340","label":"TADIRAN:1340"},{"id":"1341","label":"TADIRAN:1341"},{"id":"1342","label":"TADIRAN:1342"},{"id":"1343","label":"TADIRAN:1343"},{"id":"1344","label":"TADIRAN:1344"},{"id":"1345","label":"TADIRAN:1345"},{"id":"1560","label":"TADIRAN:1560"}],"SPRINGER":[{"id":"1360","label":"SPRINGER:1360"}],"MIDEA":[{"id":"1380","label":"MIDEA:1380"},{"id":"1381","label":"MIDEA:1381"},{"id":"1382","label":"MIDEA:1382"},{"id":"1383","label":"MIDEA:1383"},{"id":"1384","label":"MIDEA:1384"},{"id":"1385","label":"MIDEA:1385"},{"id":"1386","label":"MIDEA:1386"},{"id":"1387","label":"MIDEA:1387"},{"id":"1388","label":"MIDEA:1388"},{"id":"1389","label":"MIDEA:1389"},{"id":"1390","label":"MIDEA:1390"},{"id":"1391","label":"MIDEA:1391"},{"id":"1392","label":"MIDEA:1392"},{"id":"1393","label":"MIDEA:1393"},{"id":"1394","label":"MIDEA:1394"}],"SAMSUNG":[{"id":"1400","label":"SAMSUNG:1400"},{"id":"1401","label":"SAMSUNG:1401"},{"id":"1402","label":"SAMSUNG:1402"},{"id":"1403","label":"SAMSUNG:1403"},{"id":"1404","label":"SAMSUNG:1404"},{"id":"1405","label":"SAMSUNG:1405"},{"id":"1407","label":"SAMSUNG:1407"},{"id":"1408","label":"SAMSUNG:1408"}],"SINTECH":[{"id":"1420","label":"SINTECH:1420"}],"AKAI":[{"id":"1440","label":"AKAI:1440"},{"id":"1441","label":"AKAI:1441"}],"ALLIANCE":[{"id":"1460","label":"ALLIANCE:1460"}],"JUNKERS":[{"id":"1480","label":"JUNKERS:1480"},{"id":"1481","label":"JUNKERS:1481"}],"SANYO":[{"id":"1500","label":"SANYO:1500"},{"id":"1501","label":"SANYO:1501"}],"HISENSE":[{"id":"1520","label":"HISENSE:1520"},{"id":"1521","label":"HISENSE:1521"},{"id":"1522","label":"HISENSE:1522"}],"WHIRLPOOL":[{"id":"1540","label":"WHIRLPOOL:1540"},{"id":"1541","label":"WHIRLPOOL:1541"}],"CHIGO":[{"id":"1580","label":"CHIGO:1580"},{"id":"1581","label":"CHIGO:1581"},{"id":"1582","label":"CHIGO:1582"}],"BEKO":[{"id":"1600","label":"BEKO:1600"},{"id":"1601","label":"BEKO:1601"},{"id":"1602","label":"BEKO:1602"},{"id":"1603","label":"BEKO:1603"},{"id":"1604","label":"BEKO:1604"}],"TORNADO":[{"id":"1620","label":"TORNADO:1620"},{"id":"1621","label":"TORNADO:1621"},{"id":"1622","label":"TORNADO:1622"},{"id":"1623","label":"TORNADO:1623"},{"id":"1624","label":"TORNADO:1624"},{"id":"1625","label":"TORNADO:1625"},{"id":"1626","label":"TORNADO:1626"},{"id":"1627","label":"TORNADO:1627"}],"FUJIKO":[{"id":"1640","label":"FUJIKO:1640"}],"ROYAL":[{"id":"1660","label":"ROYAL:1660"},{"id":"1661","label":"ROYAL:1661"}],"ELECTROLUX":[{"id":"1700","label":"ELECTROLUX:1700"},{"id":"1701","label":"ELECTROLUX:1701"},{"id":"1702","label":"ELECTROLUX:1702"},{"id":"1703","label":"ELECTROLUX:1703"},{"id":"1704","label":"ELECTROLUX:1704"},{"id":"1705","label":"ELECTROLUX:1705"}],"ERISSON":[{"id":"1720","label":"ERISSON:1720"}],"KELVINATOR":[{"id":"1740","label":"KELVINATOR:1740"},{"id":"1741","label":"KELVINATOR:1741"}],"DAITSU":[{"id":"1760","label":"DAITSU:1760"},{"id":"1761","label":"DAITSU:1761"},{"id":"1762","label":"DAITSU:1762"},{"id":"1763","label":"DAITSU:1763"},{"id":"1764","label":"DAITSU:1764"}],"TROTEC":[{"id":"1780","label":"TROTEC:1780"},{"id":"1781","label":"TROTEC:1781"},{"id":"1782","label":"TROTEC:1782"}],"BALLU":[{"id":"1800","label":"BALLU:1800"},{"id":"1801","label":"BALLU:1801"}],"RIELLO":[{"id":"1820","label":"RIELLO:1820"}],"HUALING":[{"id":"1840","label":"HUALING:1840"}],"SIMBIO":[{"id":"1860","label":"SIMBIO:1860"}],"SAUNIER":[{"id":"1880","label":"SAUNIER:1880"}],"TCL":[{"id":"1900","label":"TCL:1900"},{"id":"1901","label":"TCL:1901"}],"AOKESI":[{"id":"1920","label":"AOKESI:1920"}],"ELECTRA":[{"id":"1940","label":"ELECTRA:1940"},{"id":"1941","label":"ELECTRA:1941"},{"id":"1942","label":"ELECTRA:1942"},{"id":"1943","label":"ELECTRA:1943"},{"id":"1944","label":"ELECTRA:1944"},{"id":"1945","label":"ELECTRA:1945"},{"id":"1946","label":"ELECTRA:1946"},{"id":"1947","label":"ELECTRA:1947"},{"id":"1948","label":"ELECTRA:1948"}],"AUX":[{"id":"1960","label":"AUX:1960"},{"id":"1961","label":"AUX:1961"},{"id":"1962","label":"AUX:1962"},{"id":"1963","label":"AUX:1963"}],"FUJI":[{"id":"1980","label":"FUJI:1980"}],"AERONIK":[{"id":"2000","label":"AERONIK:2000"}],"ARISTON":[{"id":"2020","label":"ARISTON:2020"}],"PIONEER":[{"id":"2040","label":"PIONEER:2040"},{"id":"2041","label":"PIONEER:2041"}],"DIMPLEX":[{"id":"2060","label":"DIMPLEX:2060"}],"SENDO":[{"id":"2080","label":"SENDO:2080"}],"MIRAGE":[{"id":"2100","label":"MIRAGE:2100"}],"TECHNIBEL":[{"id":"2120","label":"TECHNIBEL:2120"}],"UNIONAIRE":[{"id":"2140","label":"UNIONAIRE:2140"}],"LENNOX":[{"id":"2160","label":"LENNOX:2160"},{"id":"2161","label":"LENNOX:2161"},{"id":"2162","label":"LENNOX:2162"}],"HOKKAIDO":[{"id":"2180","label":"HOKKAIDO:2180"}],"IGC":[{"id":"2200","label":"IGC:2200"}],"BLUERIDGE":[{"id":"2220","label":"BLUERIDGE:2220"}],"DELONGHI":[{"id":"2240","label":"DELONGHI:2240"},{"id":"2241","label":"DELONGHI:2241"},{"id":"2242","label":"DELONGHI:2242"},{"id":"2243","label":"DELONGHI:2243"}],"PROFIO":[{"id":"2260","label":"PROFIO:2260"}],"HANTECH":[{"id":"2280","label":"HANTECH:2280"},{"id":"2281","label":"HANTECH:2281"}],"ZANUSSI":[{"id":"2300","label":"ZANUSSI:2300"},{"id":"2301","label":"ZANUSSI:2301"}],"WHYNTER":[{"id":"2320","label":"WHYNTER:2320"},{"id":"2321","label":"WHYNTER:2321"}],"VORTEX":[{"id":"2340","label":"VORTEX:2340"}],"FLOUU":[{"id":"2360","label":"FLOUU:2360"}],"BAXI":[{"id":"2380","label":"BAXI:2380"}],"YAMATSU":[{"id":"2400","label":"YAMATSU:2400"}],"VS":[{"id":"2420","label":"VS:2420"}],"VAILLANT":[{"id":"2440","label":"VAILLANT:2440"}],"FANWORLD":[{"id":"2460","label":"FANWORLD:2460"}],"ROTENSO":[{"id":"2480","label":"ROTENSO:2480"}],"ENDESA":[{"id":"2500","label":"ENDESA:2500"}],"GALANZ":[{"id":"2520","label":"GALANZ:2520"}],"AUDINAC":[{"id":"2540","label":"AUDINAC:2540"}],"MISTRAL":[{"id":"2560","label":"MISTRAL:2560"}],"KOREL":[{"id":"2580","label":"KOREL:2580"}],"EQUATION":[{"id":"2600","label":"EQUATION:2600"}],"KOMECO":[{"id":"2620","label":"KOMECO:2620"}],"FISHER":[{"id":"2640","label":"FISHER:2640"},{"id":"2641","label":"FISHER:2641"}],"HYUNDAI":[{"id":"2660","label":"HYUNDAI:2660"},{"id":"2661","label":"HYUNDAI:2661"},{"id":"2662","label":"HYUNDAI:2662"}],"APTON":[{"id":"2680","label":"APTON:2680"}],"KOLIN":[{"id":"2700","label":"KOLIN:2700"}],"AEG":[{"id":"2720","label":"AEG:2720"}],"BOSCH":[{"id":"2740","label":"BOSCH:2740"}],"TRISTAR":[{"id":"2760","label":"TRISTAR:2760"}],"XIAOMI":[{"id":"2780","label":"XIAOMI:2780"}],"ELGIN":[{"id":"2800","label":"ELGIN:2800"},{"id":"2801","label":"ELGIN:2801"}],"PEARL":[{"id":"2820","label":"PEARL:2820"}],"HTW":[{"id":"2840","label":"HTW:2840"}],"SENVILLE":[{"id":"2860","label":"SENVILLE:2860"}],"BORA":[{"id":"2880","label":"BORA:2880"}],"GOODMAN":[{"id":"2900","label":"GOODMAN:2900"}],"BEST":[{"id":"2920","label":"BEST:2920"}],"SAGA":[{"id":"2940","label":"SAGA:2940"}],"ECOAIR":[{"id":"2960","label":"ECOAIR:2960"}],"AGRATTO":[{"id":"2980","label":"AGRATTO:2980"}],"PHILCO":[{"id":"3000","label":"PHILCO:3000"}],"KLASSE":[{"id":"3020","label":"KLASSE:3020"}],"VIESSMANN":[{"id":"3040","label":"VIESSMANN:3040"}],"HAPPYTREE":[{"id":"3060","label":"HAPPYTREE:3060"}],"VOLTAS":[{"id":"3080","label":"VOLTAS:3080"}],"CECOTEC":[{"id":"3100","label":"CECOTEC:3100"}],"COOPER":[{"id":"3120","label":"COOPER:3120"}],"ARGO":[{"id":"3140","label":"ARGO:3140"}],"AQUA":[{"id":"3160","label":"AQUA:3160"}],"DEVANTI":[{"id":"3180","label":"DEVANTI:3180"}],"FRIEDRICH":[{"id":"3200","label":"FRIEDRICH:3200"}],"MUNDOCLIMA":[{"id":"3220","label":"MUNDOCLIMA:3220"}],"CASPER":[{"id":"3240","label":"CASPER:3240"}],"FAMILY":[{"id":"3260","label":"FAMILY:3260"}],"SIGMA":[{"id":"3280","label":"SIGMA:3280"}],"PARKAIR":[{"id":"3300","label":"PARKAIR:3300"}],"CHUNLAN":[{"id":"3320","label":"CHUNLAN:3320"}],"WIDE":[{"id":"3340","label":"WIDE:3340"}],"KADEN":[{"id":"3360","label":"KADEN:3360"}],"ZEPHIR":[{"id":"3380","label":"ZEPHIR:3380"}]}};
+
+/* ===== Inisialisasi dropdown Brand/Model ===== */
+(function initBrandModelFan(){
+  const brandEl = document.getElementById('brandSelect');
+  const modelEl = document.getElementById('model');      // id dipertahankan
+  const fanEl   = document.getElementById('modeSelect');
+
+  // 1) isi brand
+  function fillBrands() {
+    brandEl.innerHTML = '';
+    (AC_DATA.brand_list || []).forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = b;
+      brandEl.appendChild(opt);
+    });
+  }
+
+  // 2) isi model sesuai brand terpilih
+  function fillModels(brand) {
+    modelEl.innerHTML = '';
+    const list = (AC_DATA.models_by_brand && AC_DATA.models_by_brand[brand]) || [];
+    // isi <option> value = "BRAND:ID", text = label (mis. DAIKIN:1100)
+    list.forEach(m => {
+      const opt = document.createElement('option');
+      opt.id = `${m.id}`;
+      opt.value = `${brand}:${m.id}`;
+      opt.textContent = m.label || `${brand}:${m.id}`;
+      modelEl.appendChild(opt);
+    });
+  }
+
+  // Event: saat brand ganti → refresh model
+  brandEl.addEventListener('change', () => fillModels(brandEl.value));
+
+  // Bootstrap: isi brand & model awal
+  fillBrands();
+  if (brandEl.options.length) {
+    brandEl.selectedIndex = 0;
+    fillModels(brandEl.value);
+  }
+
+  // (opsional) set default fan = auto (sudah di HTML)
+})();
+
 // ==== Konstanta UUID (Nordic UART style) ====
 const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // Notify (ESP32 -> Web)
@@ -256,55 +312,107 @@ const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Write  (Web
 // ==== State BLE ====
 let device, server, service, txChar, rxChar;
 
+// ==== Graceful offline ====
+const GRACE_MS = 5 * 60 * 1000; // 3 menit
+const RECONNECT_INTERVAL_MS = 5000; // coba ulang tiap 5 detik
+let isManualDisconnect = false;
+let graceTimer = null;       // timeout untuk batas 3 menit
+let tickTimer = null;        // interval untuk update countdown
+let reconnectTimer = null;   // interval untuk percobaan reconnect
+let graceDeadline = 0;       // timestamp
+
 // ==== Util UI (sudah ada di halamanmu) ====
-const select       = document.getElementById('model');
+const brand = document.getElementById('brandSelect');
+const model = document.getElementById('model');
+const mode = document.getElementById('modeSelect');
+
 const dot          = document.getElementById('connDot');
 const text         = document.getElementById('connText');
 const btnConnect   = document.getElementById('btnConnect');
 const btnDisconnect= document.getElementById('btnDisconnect');
+const offlineWrap  = document.getElementById('offlineWrap');
+const offlineCount = document.getElementById('offlineCount');
+const btnOfflineInfo = document.getElementById('btnOfflineInfo');
+const btnCancelGrace = document.getElementById('btnCancelGrace');
 
 function setConnectedUI(name){
   dot.classList.add('online');
   text.textContent = `Terhubung ke ${name || 'Device'}.`;
   btnConnect.style.display = 'none';
   btnDisconnect.style.display = 'inline-block';
+  setButtonsEnabled(true);
+  hideOffline();
 }
 function setDisconnectedUI(){
   dot.classList.remove('online');
   text.textContent = 'Belum terhubung ke perangkat.';
   btnConnect.style.display = 'inline-block';
   btnDisconnect.style.display = 'none';
+  setButtonsEnabled(false);
 }
 function setButtonsEnabled(on) {
-  ['testOnBtn','testOffBtn','autoAC'].forEach(id => {
+  ['testOnBtn','testOffBtn','autoAC','saveBtn','btnSaveWifi'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !on;
   });
 }
 
+function showOffline() {
+  offlineWrap.classList.add('show');
+}
+function hideOffline() {
+  offlineWrap.classList.remove('show');
+}
+
+function startGracePeriod(){
+  clearGraceMechanism();
+  graceDeadline = Date.now() + GRACE_MS;
+  updateOfflineCountdown();
+  showOffline();
+
+  // countdown UI tiap detik
+  tickTimer = setInterval(updateOfflineCountdown, 1000);
+  // percobaan reconnect berkala
+  reconnectTimer = setInterval(tryReconnect, RECONNECT_INTERVAL_MS);
+  // hard deadline
+  graceTimer = setTimeout(()=>{
+    clearGraceMechanism();
+    console.log('[BLE] grace period habis — tetap putus');
+    setDisconnectedUI();
+  }, GRACE_MS);
+}
+
+function clearGraceMechanism(){
+  if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; }
+  if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+  if (reconnectTimer) { clearInterval(reconnectTimer); reconnectTimer = null; }
+  hideOffline();
+}
+
+function formatMMSS(msLeft){
+  const total = Math.max(0, Math.ceil(msLeft/1000));
+  const m = Math.floor(total/60);
+  const s = total % 60;
+  return `${String(m)}:${String(s).padStart(2,'0')}`;
+}
+
+function updateOfflineCountdown(){
+  const left = Math.max(0, graceDeadline - Date.now());
+  if (offlineCount) offlineCount.textContent = formatMMSS(left);
+}
+
 // ==== Pair + Subscribe ====
 async function connectAndSubscribe(){
   try{
+    isManualDisconnect = false;
     device = await navigator.bluetooth.requestDevice({
-      // pakai filter service agar chooser tidak kebanyakan device
-      //filters: [{ services: [UART_SERVICE_UUID] }],
       acceptAllDevices: true,
       optionalServices: [UART_SERVICE_UUID]
-      // kalau mau debug bebas: gunakan acceptAllDevices:true + optionalServices
     });
     console.log('[BLE] chosen:', device.name || '(no name)');
     device.addEventListener('gattserverdisconnected', onDisconnected);
 
-    server  = await device.gatt.connect();
-    service = await server.getPrimaryService(UART_SERVICE_UUID);
-    txChar  = await service.getCharacteristic(UART_TX_UUID);
-    rxChar  = await service.getCharacteristic(UART_RX_UUID);
-
-    // Subscribe notifikasi (ESP32 -> Web)
-    await txChar.startNotifications();
-    txChar.addEventListener('characteristicvaluechanged', onNotify);
-    console.log('[BLE] notifications started');
-
+    await setupGattAndSubscribe();
     setConnectedUI(device.name);
   }catch(err){
     if (err?.name === 'NotFoundError' || err?.name === 'AbortError'){
@@ -315,9 +423,43 @@ async function connectAndSubscribe(){
   }
 }
 
+async function setupGattAndSubscribe(){
+  server  = await device.gatt.connect();
+  service = await server.getPrimaryService(UART_SERVICE_UUID);
+  txChar  = await service.getCharacteristic(UART_TX_UUID);
+  rxChar  = await service.getCharacteristic(UART_RX_UUID);
+
+  await txChar.startNotifications();
+  txChar.addEventListener('characteristicvaluechanged', onNotify);
+  console.log('[BLE] notifications started');
+}
+
+async function tryReconnect(){
+  if (!device) return;
+  if (device.gatt.connected) return; // sudah nyambung oleh mekanisme lain
+  try{
+    console.log('[BLE] mencoba reconnect…');
+    await setupGattAndSubscribe();
+    clearGraceMechanism();
+    setConnectedUI(device.name);
+    console.log('[BLE] reconnect sukses');
+  }catch(err){
+    // kebanyakan kasus error karena perangkat belum ada — biarkan retry berikutnya
+    console.log('[BLE] reconnect gagal:', err?.message || err);
+  }
+}
+
 function onDisconnected(){
   console.log('[BLE] disconnected');
-  setDisconnectedUI();
+  if (isManualDisconnect) {
+    // putus manual → langsung matikan UI
+    clearGraceMechanism();
+    setDisconnectedUI();
+  } else {
+    // terputus mendadak → masuk grace period 3 menit
+    text.textContent = 'Perangkat terputus. Mencoba menyambung kembali…';
+    startGracePeriod();
+  }
 }
 
 // ==== Handler notifikasi: tampilkan variabel ke console ====
@@ -329,19 +471,15 @@ function onNotify(e){
   try {
     obj = JSON.parse(text);
   } catch {
-    // bukan JSON → abaikan
     return;
   }
   if (!obj || typeof obj !== 'object') return;
 
-  // selalu log semua pasangan k:v yang diterima
   for (const [k, v] of Object.entries(obj)) {
     console.log(`[BLE] var ${k}:`, v);
   }
 
-  // Hanya update UI jika perintahnya "realtime"
   if (obj.cmd === 'realtime') {
-    // PIR: tampilkan ON/OFF atau nilai aslinya
     if (obj.pir !== undefined) {
       const on = Number(obj.pir) ? 'MOTION' : 'NO MOTION';
       const el = document.getElementById('pirStatus');
@@ -363,43 +501,44 @@ function onNotify(e){
       if (el) el.textContent = Number(obj.pressure).toFixed(0);
     }
 
+    /*
     if (obj.model !== undefined) {
-        let model = "-";
-        switch(obj.model){
-            case 0:
-                model = "DAIKIN:ESP";
-                break;
-            case 1:
-                model = "DAIKIN:DAIKIN2";
-                break;
-            case 2:
-                model = "DAIKIN:DAIKIN216";
-                break;
-            case 3:
-                model = "DAIKIN:DAIKIN160";
-                break;
-            case 4:
-                model = "DAIKIN:DAIKIN176";
-                break;
-            case 5:
-                model = "DAIKIN:DAIKIN128";
-                break;
-            case 6:
-                model = "DAIKIN:DAIKIN152";
-                break;
-            case 7:
-                model = "DAIKIN:DAIKIN64";
-                break;
-        }
-        const el = document.getElementById('serverModel');
-        const el2 = document.getElementById('savedModelDisplay');
-        if (el) el.textContent = model;
-        if (el2) el2.textContent = model;
-        select.selectedIndex = String(obj.model);
+      let model = "-";
+      switch(obj.model){
+        case 0: model = "DAIKIN:ESP"; break;
+        case 1: model = "DAIKIN:DAIKIN2"; break;
+        case 2: model = "DAIKIN:DAIKIN216"; break;
+        case 3: model = "DAIKIN:DAIKIN160"; break;
+        case 4: model = "DAIKIN:DAIKIN176"; break;
+        case 5: model = "DAIKIN:DAIKIN128"; break;
+        case 6: model = "DAIKIN:DAIKIN152"; break;
+        case 7: model = "DAIKIN:DAIKIN64"; break;
+      }
+      const el = document.getElementById('serverModel');
+      const el2 = document.getElementById('savedModelDisplay');
+      if (el) el.textContent = model;
+      if (el2) el2.textContent = model;
+      select.selectedIndex = String(obj.model);
+    }
+    */
+
+    if (obj.ac !== undefined) {
+      const el = document.getElementById('serverModel');
+      const el2 = document.getElementById('savedModelDisplay');
+      brand.value = `${String(obj.ac).toUpperCase()}`;
+      if (obj.model !== undefined) {
+        const target = `${obj.ac}`.toUpperCase() + ':' + String(obj.model);
+        if (el) el.textContent = target;
+        if (el2) el2.textContent = target;
+        model.value = target;
+      }
+    } 
+
+    if (obj.mode !== undefined) {
+      mode.value = String(obj.mode);
     }
   }
 }
-
 
 // ==== Kirim SSID/Password saat klik #btnSaveWifi ====
 async function sendWifi(){
@@ -414,11 +553,9 @@ async function sendWifi(){
     return;
   }
 
-  // Format kirim: JSON agar rapi di sisi ESP32
   const payload = JSON.stringify({ cmd:'set_wifi', ssid, pass });
 
   try{
-    // gunakan writeValue (with response) supaya error terlihat jelas
     await rxChar.writeValue(new TextEncoder().encode(payload));
     console.log('[BLE] sent set_wifi:', {ssid, passHidden: '*'.repeat(pass.length)});
   }catch(err){
@@ -426,47 +563,56 @@ async function sendWifi(){
   }
 }
 
-// ==== Tombol ====
+// ==== Tombol utama ====
 btnConnect.addEventListener('click', connectAndSubscribe);
 btnDisconnect.addEventListener('click', async ()=>{
+  isManualDisconnect = true;
   try{ await device?.gatt?.disconnect(); }catch{}
+  clearGraceMechanism();
   setDisconnectedUI();
 });
 document.getElementById('btnSaveWifi').addEventListener('click', sendWifi);
 
+// Offline info & batalkan grace
+btnOfflineInfo.addEventListener('click', () => {
+  alert('Perangkat sementara offline. Aplikasi menahan koneksi hingga 3 menit dan mencoba reconnect otomatis. Jika perangkat kembali dalam waktu tersebut, koneksi akan pulih tanpa perlu pairing ulang.');
+});
+btnCancelGrace.addEventListener('click', () => {
+  isManualDisconnect = true;
+  try{ device?.gatt?.disconnect(); }catch{}
+  clearGraceMechanism();
+  setDisconnectedUI();
+});
 
 // === kirim perintah mode AC ===
-// mapping: testOnBtn=1, testOffBtn=2, autoAC=3
 async function sendModeAc(val) {
   if (!rxChar) {
     console.warn('[BLE] belum terhubung (rxChar kosong)');
     return;
   }
   const payload = JSON.stringify({ cmd: 'mode_ac', value: Number(val) });
-
   try {
-    await rxChar.writeValue(new TextEncoder().encode(payload)); // with response
+    await rxChar.writeValue(new TextEncoder().encode(payload));
     console.log('[BLE] sent mode_ac:', payload);
   } catch (err) {
     console.error('[BLE] write error:', err);
   }
 }
 
-// pasang event listeners tombol
 document.getElementById('testOnBtn')?.addEventListener('click',  () => sendModeAc(1));
 document.getElementById('testOffBtn')?.addEventListener('click', () => sendModeAc(2));
 document.getElementById('autoAC')?.addEventListener('click',     () => sendModeAc(3));
 
 // === kirim "set_model" berdasarkan pilihan <select id="model"> ===
 const MODEL_ORDER = [
-  "DAIKIN:ESP",        // 0 (paling atas)
+  "DAIKIN:ESP",        // 0
   "DAIKIN:DAIKIN2",    // 1
   "DAIKIN:DAIKIN216",  // 2
   "DAIKIN:DAIKIN160",  // 3
   "DAIKIN:DAIKIN176",  // 4
   "DAIKIN:DAIKIN128",  // 5
   "DAIKIN:DAIKIN152",  // 6
-  "DAIKIN:DAIKIN64"    // 7 (paling bawah)
+  "DAIKIN:DAIKIN64"    // 7
 ];
 
 async function sendSetModel() {
@@ -474,28 +620,26 @@ async function sendSetModel() {
     console.warn('[BLE] belum terhubung (rxChar kosong)');
     return;
   }
-  const sel = document.getElementById('model');
-  if (!sel) return;
+  if (!brand || !model || !mode) return;
 
-  const selectedText = sel.value; // contoh: "DAIKIN:ESP"
-  const idx = MODEL_ORDER.indexOf(selectedText);
+  const selectedBrand = brand.value;
+  const selectedModel = model.id;
+  const selectedMode  = mode.value;
+  //const idx = MODEL_ORDER.indexOf(selectedText);
+  //if (idx < 0) {
+  //  console.error('[BLE] model tidak dikenali:', selectedText);
+  //  return;
+  //}
 
-  if (idx < 0) {
-    console.error('[BLE] model tidak dikenali:', selectedText);
-    return;
-  }
-
-  const payload = JSON.stringify({ cmd: 'set_model', value: idx });
-
+  const payload = JSON.stringify({ cmd: 'set_model', ac: selectedBrand, model: selectedModel, mode: selectedMode });
   try {
-    await rxChar.writeValue(new TextEncoder().encode(payload)); // with response
+    await rxChar.writeValue(new TextEncoder().encode(payload));
     console.log('[BLE] sent set_model:', { label: selectedText, value: idx });
   } catch (err) {
     console.error('[BLE] write error:', err);
   }
 }
 
-// tombol Simpan Model
 document.getElementById('saveBtn')?.addEventListener('click', sendSetModel);
 
 // Guard untuk browser yang tidak support
@@ -503,6 +647,5 @@ if (!('bluetooth' in navigator)) {
   console.warn('Web Bluetooth tidak didukung di browser ini.');
 }
 </script>
-
 </body>
 </html>

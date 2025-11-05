@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>SmartIR API (SW)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+</head>
+<body>
+  <h1>SmartIR API (Service Worker)</h1>
+  <p>Endpoint: <code>/api/get-hex</code> (POST JSON: {"model":"1100","mode":"high"})</p>
+
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(() => console.log('SW registered'))
+      .catch(err => console.error('SW register failed', err));
+  } else {
+    console.warn('Service Worker not supported');
+  }
+  </script>
+</body>
+</html>
